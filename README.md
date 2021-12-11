@@ -13,5 +13,5 @@
  
 ## 사용법
 > DailyNewsManager.ipynb를 실행
-  > 위 파일을 실행하면 하위 py 파일들이 import되어 실행됨
+>> 위 파일을 실행하면 하위 py 파일들이 import되어 실행됨
 
