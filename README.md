@@ -6,6 +6,7 @@
    * scraper.py
    * summarizer.py
    * interface.py
+     * circle.png (wordcloud 이미지)
 
 * attention.ipynb (시험용)
    * attention.py
