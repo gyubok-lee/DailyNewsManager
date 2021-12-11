@@ -1,12 +1,15 @@
 
 import numpy as np
 import pandas as pd
+import time
 from tensorflow.keras.preprocessing.text import Tokenizer 
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 
 from konlpy.tag import Okt, Kkma
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.preprocessing import normalize
+from tqdm import tqdm
+tqdm.pandas()
 np.random.seed(seed=0)
 
 class news_summarizing():
@@ -23,9 +26,9 @@ class news_summarizing():
             now['분야'] = secs[i]
             df = pd.concat([df,now], axis = 0)
             
-        self.df = df
-        self.df1 = df[df['contents'].str.len() < 200]
-        self.df2 = df[df['contents'].str.len() >= 200]
+        self.df = df 
+        self.df1 = df[df['contents'].str.len() < 150] # 150자 미만의 기사들은 요약없이 내용을 그대로
+        self.df2 = df[df['contents'].str.len() >= 150]
     
     def text2sentence (self,text) : # 기사 한 문단을 하나의 문장 리스트로
         kkma = Kkma()
@@ -37,8 +40,9 @@ class news_summarizing():
         return sentence
     
     def give_df(self):
+        time.sleep(1.5)
         print('----------뉴스 데이터를 처리 중입니다----------')
-        self.df2['s1'] = self.df2['contents'].apply(lambda x: self.text2sentence(x))
+        self.df2['s1'] = self.df2['contents'].progress_apply(lambda x: self.text2sentence(x))
         return self.df1,self.df2
     
 
@@ -91,7 +95,7 @@ class smz() :
         ranks = np.linalg.solve(A,B) # 선형방정식 solve
         return {idx: r[0] for idx, r in enumerate(ranks)}
 
-    def summarize(sentences,ranked):
+    def summarize(sentences,ranked): # 상위 sunt_num개의 문장을 추출
         sent_num =3
         summary = []
         index = []
@@ -101,18 +105,21 @@ class smz() :
 
         for idx in index:
             summary.append(sentences[idx])
-        return ' '.join(summary)
+        return '\n'.join(summary)
             
     def run(x) : 
         cleaned = smz.cleansing(x)
 
         try :
+            # 그래프 만들기
             sent_graph = smz.mk_sentGraph(cleaned)
             words_graph, idx2word = smz.mk_wordsGraph(cleaned)
 
+            # 순위 매기기
             sent_rank_idx = smz.get_ranks(sent_graph)
             word_rank_idx = smz.get_ranks(words_graph)
 
+            # 정렬
             sorted_sent_rank_idx = sorted(sent_rank_idx,
                                   key = lambda x : sent_rank_idx[x],
                                           reverse = True)
@@ -120,6 +127,7 @@ class smz() :
                                   key = lambda x : word_rank_idx[x],
                                           reverse = True)
 
+            # 순서대로 문장 추출
             result = smz.summarize(x,sorted_sent_rank_idx)
             return result
         except :
@@ -128,7 +136,7 @@ class smz() :
         
     def concatDF(df1, df2):
         print('----------뉴스 기사 요약문이 완성되었습니다 ----------')
-        df1['요약문'] = ''
+        df1['요약문'] = df1['contents']
         df_final = pd.concat([df1,df2], axis =0).sort_values(by=['분야'])
         df_final.loc[df_final.요약문 == '', '요약문'] = df_final.loc[df_final.요약문 == '', 'title']
         return df_final.drop(['s1'], axis=1).reset_index(drop = True)

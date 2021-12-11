@@ -49,9 +49,9 @@ class Manager ():
         print('...')
         section = self.select.value
         self.my_df = self.df[self.df['분야'] == section]
-        self.my_df['wc'] = self.my_df['title'] + self.my_df['contents']
+        self.my_df['wc'] = self.my_df['title'] + self.my_df['contents'] # 더 좋은 요약을 위해 제목까지 참조
         
-        word_list, word_dict = self.make_wordlist()
+        word_dict = self.make_wordlist()
         print('...')
         self.make_cloud(word_dict)
         
@@ -91,8 +91,9 @@ class Manager ():
         
         for idx in range(len(tmp_df)) :
             print(f'기사 제목 : {tmp_df.title.values[idx]}\n')
-            print(f'기사 요약 : {tmp_df.요약문.values[idx]}\n')
-            print('------------------------------------\n')
+            print(f'기사 링크 : {tmp_df.url.values[idx]}\n')
+            print(f'기사 요약 :\n {tmp_df.요약문.values[idx]}\n')
+            print('\n------------------------------------\n')
             
         display(self.back2section)    
         display(self.end_botton)
@@ -122,8 +123,9 @@ class Manager ():
                     wdict.setdefault(j[0],0)
                     wdict[j[0]] += 1
 
-        result = sorted(list(wdict.items()), key = lambda x :x[1],reverse = True) # 빈도수 리스트반환
-        return result, wdict    
+        top30 = [i[0] for i in (sorted(list(wdict.items()), key = lambda x :x[1],reverse = True)[:30])] # 빈도수 상위 30개 단어리스트
+        result = {key : values for key, values in wdict.items() if key in top30}
+        return result  
     
     def make_cloud(self,d) : # 워드클라우드 만들기
         wordcloud = WordCloud(font_path='font/malgun.ttf', background_color='white',width = 300,

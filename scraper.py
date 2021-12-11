@@ -70,7 +70,7 @@ class news_scraper ():
         list_href = []
 
         for section in self.sections :
-            cols = ['title', 'contents']
+            cols = ['title', 'contents','url']
             df = pd.DataFrame(columns = cols)
 
             req = self.get_request(section)
@@ -82,12 +82,12 @@ class news_scraper ():
             for href in list_href :
                 href_req = requests.get(href, headers = self.custom_header)
                 href_soup = BeautifulSoup(href_req.text, "html.parser")
-                
+                url = href_soup.select_one('meta[property="og:url"]')['content']
                 try:
                     table = href_soup.find(name = 'td', attrs = {"class":"content"})
                     title = table.find(name = 'div', attrs = {"class":"article_info"}).find('h3').get_text()
                     contents = self.get_txt(table)
-                    row = pd.Series([title,contents],index = df.columns)
+                    row = pd.Series([title,contents,url],index = df.columns)
                     df = df.append(row, ignore_index = True)
                 except :
                     continue
