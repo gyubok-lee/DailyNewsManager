@@ -2,13 +2,13 @@
 > 일간 뉴스 요약
 
 ## 구성
-* DailyNewsManager.ipynb
- ** scraper.py
- ** summarizer.py
- ** interface.py
+* DailyNewsManager.ipynb 
+   * scraper.py
+   * summarizer.py
+   * interface.py
 
 * attention.ipynb (시험용)
- ** attention.py
+   * attention.py
  
 ## 사용법
 > DailyNewsManager.ipynb를 실행
