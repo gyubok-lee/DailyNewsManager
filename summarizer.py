@@ -27,8 +27,8 @@ class news_summarizing():
             df = pd.concat([df,now], axis = 0)
             
         self.df = df 
-        self.df1 = df[df['contents'].str.len() < 150] # 150자 미만의 기사들은 요약없이 내용을 그대로
-        self.df2 = df[df['contents'].str.len() >= 150]
+        self.df1 = df[df['contents'].str.len() < 300] # 300자 미만의 기사들은 요약없이 내용을 그대로
+        self.df2 = df[df['contents'].str.len() >= 300]
     
     def text2sentence (self,text) : # 기사 한 문단을 하나의 문장 리스트로
         kkma = Kkma()
@@ -63,7 +63,7 @@ class smz() :
 
         nouns = []
         for sentence in text :
-            if sentence is not '':
+            if sentence is not '': # 1자 이상이면서 stopword가 아닌 명사들 추출
                 nouns.append(' '.join([noun for noun in okt.nouns(str(sentence))
                                        if noun not in stopwords and len(noun) > 1]))
         return nouns
@@ -93,6 +93,7 @@ class smz() :
             
         B = (1-d) * np.ones((matrix_size,1))
         ranks = np.linalg.solve(A,B) # 선형방정식 solve
+        
         return {idx: r[0] for idx, r in enumerate(ranks)}
 
     def summarize(sentences,ranked): # 상위 sunt_num개의 문장을 추출
