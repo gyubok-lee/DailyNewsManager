@@ -9,13 +9,17 @@ from konlpy.tag import Okt, Kkma
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.preprocessing import normalize
 from tqdm import tqdm
-tqdm.pandas()
 np.random.seed(seed=0)
 
-class news_summarizing():
+class news_summarizer():
     """
-    데이터를 요약가능한 데이터와 그렇지 않은 데이터 둘로 나눔
+    데이터를 요약가능한 데이터와 그렇지 않은 데이터 둘로 나눔.
+    요약 가능한 데이터는 추출적 요약을 통해 뉴스 기사를 3문장으로 요약.
+    TextRank 기법을 통해 요약모델을 완성
     """
+    
+    tfd = TfidfVectorizer()
+    cnt_vec = CountVectorizer()
     
     def __init__(self, news_list):
         df = news_list[0]
@@ -40,22 +44,12 @@ class news_summarizing():
         return sentence
     
     def give_df(self):
-        time.sleep(1.5)
         print('----------뉴스 데이터를 처리 중입니다----------')
+        time.sleep(1.5)
+        tqdm.pandas()
         self.df2['s1'] = self.df2['contents'].progress_apply(lambda x: self.text2sentence(x))
-        return self.df1,self.df2
     
-
-class smz() :
-    """
-    추출적 요약을 통해 뉴스 기사를 3문장으로 요약.
-    TextRank 기법을 통해 요약모델을 완성
-    """
     
-    tfd = TfidfVectorizer()
-    cnt_vec = CountVectorizer()
-    
-
     def cleansing(text): # 명사들만 추출
         okt =Okt()
         stopwords = ['머니투데이', '연합뉴스', '데일리', '동아일보', '중앙일보',
@@ -70,13 +64,13 @@ class smz() :
 
 
     def mk_sentGraph(x): # 문장 간 voting graph 생성
-        tfd_mat = smz.tfd.fit_transform(x).toarray()
+        tfd_mat = news_summarizer.tfd.fit_transform(x).toarray()
         gs = np.dot(tfd_mat, tfd_mat.T)
         return gs
 
     def mk_wordsGraph(x):# 단어 간 voting graph 생성
-        cnt_vec_mat = normalize(smz.cnt_vec.fit_transform(x).toarray().astype(float), axis =0)
-        voca = smz.cnt_vec.vocabulary_
+        cnt_vec_mat = normalize(news_summarizer.cnt_vec.fit_transform(x).toarray().astype(float), axis =0)
+        voca = news_summarizer.cnt_vec.vocabulary_
         return np.dot(cnt_vec_mat.T, cnt_vec_mat), {voca[i] : i for i in voca}
 
     def get_ranks(graph, d = 0.85) : # text rank 구하기
@@ -108,17 +102,17 @@ class smz() :
             summary.append(sentences[idx])
         return '\n'.join(summary)
             
-    def run(x) : 
-        cleaned = smz.cleansing(x)
+    def run(x) :     
+        cleaned = news_summarizer.cleansing(x)
 
         try :
             # 그래프 만들기
-            sent_graph = smz.mk_sentGraph(cleaned)
-            words_graph, idx2word = smz.mk_wordsGraph(cleaned)
+            sent_graph = news_summarizer.mk_sentGraph(cleaned)
+            words_graph, idx2word = news_summarizer.mk_wordsGraph(cleaned)
 
             # 순위 매기기
-            sent_rank_idx = smz.get_ranks(sent_graph)
-            word_rank_idx = smz.get_ranks(words_graph)
+            sent_rank_idx = news_summarizer.get_ranks(sent_graph)
+            word_rank_idx = news_summarizer.get_ranks(words_graph)
 
             # 정렬
             sorted_sent_rank_idx = sorted(sent_rank_idx,
@@ -129,15 +123,19 @@ class smz() :
                                           reverse = True)
 
             # 순서대로 문장 추출
-            result = smz.summarize(x,sorted_sent_rank_idx)
+            result = news_summarizer.summarize(x,sorted_sent_rank_idx)
             return result
         except :
             print(f'요약에 실패하였습니다. 기사 내용 : {x[0][:50]} ......')
             return ''
         
-    def concatDF(df1, df2):
+    def start_smz(self):
+        self.give_df()
+        self.df2['요약문'] = self.df2['s1'].apply(lambda x: news_summarizer.run(x))
         print('----------뉴스 기사 요약문이 완성되었습니다 ----------')
-        df1['요약문'] = df1['contents']
-        df_final = pd.concat([df1,df2], axis =0).sort_values(by=['분야'])
-        df_final.loc[df_final.요약문 == '', '요약문'] = df_final.loc[df_final.요약문 == '', 'title']
-        return df_final.drop(['s1'], axis=1).reset_index(drop = True)
+        
+        self.df1['요약문'] = self.df1['contents']
+        self.df_final = pd.concat([self.df1,self.df2], axis =0).sort_values(by=['분야'])
+        self.df_final.loc[self.df_final.요약문 == '', '요약문'] = self.df_final.loc[self.df_final.요약문 == '', 'title']
+        self.df_final = self.df_final.drop(['s1'], axis=1).reset_index(drop = True)
+        return self.df_final
